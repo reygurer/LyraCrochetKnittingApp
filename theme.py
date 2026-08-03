@@ -46,16 +46,31 @@ def apply_theme():
         }}
 
         /* Buttons — explicit background+text pair so contrast never depends
-           on Streamlit's own light/dark theme (fixes invisible "Open" text) */
+           on Streamlit's own light/dark theme (fixes invisible "Open" text).
+           Streamlit renders the button label inside a child <p>/<span>, and
+           the broad ".stApp p/span" rule above applies directly to that
+           child (not inherited), so it can silently win over the color set
+           on the <button> itself. These descendant selectors are more
+           specific, so they always win regardless of rule order. */
         .stButton > button {{
             background-color: #ffffff;
             color: {INK} !important;
             border: 1px solid {INK};
         }}
+        .stButton > button p,
+        .stButton > button span,
+        .stButton > button div {{
+            color: {INK} !important;
+        }}
         .stButton > button[kind="primary"] {{
             background-color: {INK};
             color: #ffffff !important;
             border: none;
+        }}
+        .stButton > button[kind="primary"] p,
+        .stButton > button[kind="primary"] span,
+        .stButton > button[kind="primary"] div {{
+            color: #ffffff !important;
         }}
         </style>
         """,
