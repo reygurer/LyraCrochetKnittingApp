@@ -2,10 +2,10 @@ import io
 import streamlit as st
 from sqlalchemy.exc import IntegrityError
 
-from models import SessionLocal, Pattern, Unlock, init_db
+from models import SessionLocal, Pattern, Unlock, PurchaseAuthorization, init_db
 from formula_engine import compute_all, render_instructions
 from excel_export import build_workbook
-from theme import apply_theme
+from theme import apply_theme, eyebrow
 
 apply_theme()
 init_db()
@@ -53,7 +53,7 @@ if "unlocked" not in st.session_state:
     st.session_state.unlocked = set()
 
 session = get_session()
-st.caption("PERSONALIZED KNIT / CROCHET PATTERNS")
+eyebrow("Personalized Knit / Crochet Patterns")
 
 # Returning visit via a bookmarked/shared link with ?email=... in the URL —
 # skip straight past the login screen.
@@ -111,7 +111,21 @@ elif st.session_state.step == "library":
                             "Your access key for this pattern", type="password", key=f"key_{p.id}"
                         )
                         if st.button("Verify", key=f"verify_{p.id}"):
-                            if key_input and key_input == p.access_key:
+                            authorized = (
+                                session.query(PurchaseAuthorization)
+                                .filter_by(email=st.session_state.user_email, pattern_id=p.id)
+                                .first()
+                            )
+                            if not authorized:
+                                # This email has no recorded Etsy order for this
+                                # pattern (see add_order.py) — the key alone
+                                # isn't enough, even if it's correct.
+                                st.error(
+                                    "We don't have an order on file for this email and "
+                                    "pattern. Make sure you're using the same email you "
+                                    "checked out with on Etsy."
+                                )
+                            elif key_input and key_input == p.access_key:
                                 # Persist the unlock against this email so it's
                                 # remembered next time, on any device.
                                 try:
@@ -133,6 +147,10 @@ elif st.session_state.step == "form":
 
     st.title(pattern.name)
 
+    # Reachable only from the library once this pattern is free or already
+    # unlocked (see the LIBRARY step above) — both the video and the form
+    # below are gated behind purchase that way, no extra check needed here.
+
     if "inputs" not in st.session_state or st.session_state.get("inputs_pattern_id") != pattern.id:
         st.session_state.inputs = {}
         st.session_state.inputs_pattern_id = pattern.id
@@ -148,12 +166,26 @@ elif st.session_state.step == "form":
                 key=f"input_{pattern.id}_{f['id']}",
             )
 
-    field_group("Swatch measurements", pattern.swatch_fields)
-    field_group("Yarn info", pattern.yarn_fields)
-    field_group("Body measurements", pattern.measurement_fields)
+    def render_written_form():
+        field_group("Swatch measurements", pattern.swatch_fields)
+        field_group("Yarn info", pattern.yarn_fields)
+        field_group("Body measurements", pattern.measurement_fields)
 
-    if st.button("Calculate my numbers", type="primary"):
-        go("results", pattern_id=pattern.id)
+        if st.button("Calculate my numbers", type="primary"):
+            go("results", pattern_id=pattern.id)
+
+    if pattern.video_url:
+        # Two explicit options, instead of stacking the video above the
+        # form — buyer picks one before doing anything else.
+        tab_video, tab_written = st.tabs(["Watch video", "Written pattern & measurements"])
+        with tab_video:
+            st.video(pattern.video_url)
+        with tab_written:
+            render_written_form()
+    else:
+        # No video for this pattern — go straight to the written form,
+        # same as before.
+        render_written_form()
 
 # ---------------------------------------------------------------- RESULTS
 elif st.session_state.step == "results":

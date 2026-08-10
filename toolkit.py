@@ -4,6 +4,8 @@ pattern. This carries over the logic from the earlier toolkit's
 gauge_converter / yarn_calculator / pattern_scaler modules.
 """
 
+import math
+
 # ---------------------------------------------------------------- GAUGE
 
 NEEDLE_MM_TO_US = [
@@ -15,7 +17,13 @@ NEEDLE_MM_TO_US = [
 
 
 def calculate_gauge(stitch_count: float, row_count: float, width_cm: float, height_cm: float):
-    """Returns stitches/rows per 10cm from a swatch."""
+    """
+    Returns stitches/rows per 10cm from a swatch.
+
+    width_cm is the horizontal measurement (the direction the beginning
+    chain/foundation row runs, i.e. the stitch direction). height_cm is the
+    vertical measurement (the direction rows stack going up from that chain).
+    """
     sts_per_10cm = (stitch_count / width_cm) * 10 if width_cm else 0
     rows_per_10cm = (row_count / height_cm) * 10 if height_cm else 0
     return sts_per_10cm, rows_per_10cm
@@ -134,3 +142,85 @@ def scale_count(base_count: float, base_gauge: float, target_gauge: float,
     else:
         scaled = round(scaled)
     return int(scaled)
+
+
+# ---------------------------------------------------------------- BODICE SHAPING
+
+def calculate_bodice_shaping(
+    bust_cm: float,
+    waist_cm: float,
+    underbust_cm: float,
+    underbust_to_armpit_cm: float,
+    bottom_panel_stitches: float,
+    stitch_per_10cm: float,
+    row_per_10cm: float,
+):
+    """
+    Sideways bottom panel + shaped upper (bust) panel, worked as:
+
+    - Bottom panel: cast on `bottom_panel_stitches` (a free choice, sets how
+      tall/long the panel is, not derived from gauge) and knit sideways until
+      it's wide enough to cover the average of the waist and underbust
+      circumference (since the panel tapers between those two measurements).
+      That row count is `bottom_panel_rows` (a).
+    - Upper panel: picked up / cast on at `2 * bottom_panel_rows` stitches (b)
+      to start (roughly converts the same edge length from the row gauge into
+      the stitch gauge for the new, normal-orientation panel).
+    - From there, increase evenly on both sides every row until both the
+      bust stitch count (from `bust_cm`) and the vertical height
+      (`underbust_to_armpit_cm`, converted to rows) are reached.
+    - The total stitches to increase are spread across those rows. Since an
+      increase row adds stitches to both sides symmetrically, the per-row
+      total must be even: round up to the next even number if it isn't, then
+      split it in half for each side.
+
+    Returns a dict with:
+        bottom_panel_rows            -> (a) rows to knit for the bottom panel
+        upper_panel_start_stitches   -> (b) cast on for the upper panel (2x)
+        target_stitches              -> stitch count matching bust_cm
+        total_increase               -> stitches still needed to reach that
+        increase_rows                -> (d) rows over which to spread the increases
+        per_row_increase             -> (c) total stitches increased each row (both sides)
+        per_side_increase            -> per_row_increase split in half, one side
+    """
+    stitch_per_cm = stitch_per_10cm / 10
+    row_per_cm = row_per_10cm / 10
+
+    bottom_panel_rows = round(row_per_cm * (waist_cm + underbust_cm) / 2)
+    upper_panel_start_stitches = 2 * bottom_panel_rows
+
+    target_stitches = round(stitch_per_cm * bust_cm)
+    total_increase = target_stitches - upper_panel_start_stitches
+
+    increase_rows = round(row_per_cm * underbust_to_armpit_cm)
+
+    if total_increase <= 0:
+        # Already at (or past) the target width — nothing left to increase.
+        return {
+            "bottom_panel_rows": bottom_panel_rows,
+            "upper_panel_start_stitches": upper_panel_start_stitches,
+            "target_stitches": target_stitches,
+            "total_increase": 0,
+            "increase_rows": increase_rows,
+            "per_row_increase": 0,
+            "per_side_increase": 0,
+        }
+
+    if increase_rows <= 0:
+        # Not enough vertical room per the gauge — do it all in one row.
+        increase_rows = 1
+
+    per_row_increase = math.ceil(total_increase / increase_rows)
+    if per_row_increase % 2 != 0:
+        per_row_increase += 1  # round up to the next even number so it splits cleanly
+    per_side_increase = per_row_increase // 2
+
+    return {
+        "bottom_panel_rows": bottom_panel_rows,
+        "upper_panel_start_stitches": upper_panel_start_stitches,
+        "target_stitches": target_stitches,
+        "total_increase": total_increase,
+        "increase_rows": increase_rows,
+        "per_row_increase": per_row_increase,
+        "per_side_increase": per_side_increase,
+    }

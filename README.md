@@ -23,6 +23,23 @@ kodunda hiçbir değişiklik gerekmez. Alan/formül formatı için
 - `excel_export.py`   — canlı formüllü, iki sayfalı (Girdiler/Sonuçlar) Excel üretimi
 - `app.py`             — Streamlit arayüzü
 - `seed_demo.py`       — test amaçlı örnek pattern ekleme scripti
+- `add_order.py`       — Etsy siparişi geldiğinde alıcı email'ini pattern için yetkilendirme scripti
+- `set_pattern_video.py` — var olan bir pattern'e video linki bağlama/kaldırma scripti
+
+## Pattern'e özel video ekleme
+
+Her pattern'e ayrı bir video bağlayabilirsin — alıcı, pattern'i açtığında
+"Video izle" / "Yazılı pattern & ölçüler" diye iki sekme görür (video yoksa
+direkt yazılı forma gider). Video, YouTube/Vimeo'da "unlisted" (liste dışı)
+yüklenmiş bir link olabilir; Streamlit bunu otomatik gömüp oynatıyor.
+
+    python3 set_pattern_video.py <pattern-slug> <video-url>
+
+Video sadece pattern açıldıktan sonra erişilebilen sayfada gösterildiği için
+satın alma arkasında kalıyor — ama "unlisted" bir video linkini elinde
+bulunduran biri, app'e hiç girmeden de o linki açıp izleyebilir. Bu,
+dijital pattern satan çoğu mağazanın kabul ettiği bir risk seviyesi;
+tamamen sızdırılamaz hale getirmek çok daha büyük bir iş gerektirir.
 
 ## Etsy alıcılarına dağıtım (hosted model)
 
@@ -43,7 +60,15 @@ linke giriyor.
 **Nasıl kilit açılıyor:**
 - Alıcı e-postasını girer (şifre yok — sadece kimlik/hafıza amaçlı).
 - Her `Pattern` satırının kendi `access_key`'i var (Etsy siparişiyle
-  birlikte gönderdiğin kod). Doğru key girildiğinde bir `Unlock` satırı
+  birlikte gönderdiğin kod).
+- Etsy'den bir sipariş geldiğinde, alıcının email'ini o pattern için
+  yetkilendirmek üzere `python3 add_order.py <pattern-slug> <email>`
+  çalıştırman gerekir (bkz. aşağıdaki dosya listesi). Bu kayıt olmadan,
+  doğru access_key girilse bile pattern açılmaz — key tek başına yetmez,
+  key'i bilen biri sadece gerçekten o pattern'i satın aldığı email ile
+  açabilir. Bu, key'in başka biriyle paylaşılıp başka bir email'den
+  kullanılmasını engeller.
+- Yetki kaydı + doğru key ile açıldığında bir `Unlock` satırı
   (email + pattern_id) veritabanına yazılır.
 - Bir sonraki ziyarette (başka bir cihazdan bile) aynı e-postayla giriş
   yapınca, önceden açılmış tüm pattern'ler otomatik görünür — tek tek

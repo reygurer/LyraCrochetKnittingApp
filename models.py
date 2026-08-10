@@ -44,6 +44,13 @@ class Pattern(Base):
     # Instruction text — contains placeholders like {A}, {B}
     instructions_template = Column(Text, default="")
 
+    # Optional walkthrough video for this pattern only — a YouTube/Vimeo
+    # link or a direct video file URL. Only shown once the buyer has
+    # actually unlocked the pattern (see views/patterns.py — the form/
+    # results steps are only reachable after that), so it's effectively
+    # gated behind purchase the same way the instructions/formulas are.
+    video_url = Column(String, nullable=True)
+
 
 class Unlock(Base):
     """
@@ -54,6 +61,23 @@ class Unlock(Base):
 
     __tablename__ = "unlocks"
     __table_args__ = (UniqueConstraint("email", "pattern_id", name="uq_unlock_email_pattern"),)
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String, nullable=False, index=True)
+    pattern_id = Column(Integer, ForeignKey("patterns.id"), nullable=False)
+
+
+class PurchaseAuthorization(Base):
+    """
+    Records which email actually bought which pattern on Etsy. You add a row
+    here yourself (see add_order.py) when an order comes in. Unlocking now
+    requires BOTH the correct access_key AND a matching row here for the
+    signed-in email — so a shared/leaked key alone isn't enough to unlock a
+    pattern for an email that never actually bought it.
+    """
+
+    __tablename__ = "purchase_authorizations"
+    __table_args__ = (UniqueConstraint("email", "pattern_id", name="uq_purchase_email_pattern"),)
 
     id = Column(Integer, primary_key=True)
     email = Column(String, nullable=False, index=True)
@@ -74,3 +98,22 @@ class Project(Base):
 
 def init_db():
     Base.metadata.create_all(engine)
+    _ensure_column("patterns", "video_url", "VARCHAR")
+
+
+def _ensure_column(table, column, coltype):
+    """
+    Base.metadata.create_all only creates tables that don't exist yet — it
+    never adds a new column to a table that's already there. Since this
+    project has no migration tool (Alembic etc.), this does the one thing
+    we actually need: add a column if it's missing, on both SQLite (local)
+    and Postgres (production), so existing databases pick up new Pattern
+    fields (like video_url) without anyone having to drop/recreate them.
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    existing = [c["name"] for c in inspector.get_columns(table)]
+    if column not in existing:
+        with engine.begin() as conn:
+            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"))

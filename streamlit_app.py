@@ -8,7 +8,7 @@ for anything beyond the simplest case.
 """
 import streamlit as st
 
-st.set_page_config(page_title="Personalized Knit/Crochet Patterns", layout="centered")
+st.set_page_config(page_title="Personalized Knit/Crochet Patterns", page_icon="🧶", layout="centered")
 
 PAGES = {
     "home": st.Page("views/home.py", title="Home", url_path="home", default=True),
@@ -17,6 +17,7 @@ PAGES = {
     "yarn": st.Page("views/yarn_calculator.py", title="Yarn Calculator", url_path="yarn-calculator"),
     "scaler": st.Page("views/pattern_scaler.py", title="Pattern Scaler", url_path="pattern-scaler"),
     "rows": st.Page("views/row_counter.py", title="Row Counter", url_path="row-counter"),
+    "bodice": st.Page("views/bodice_calculator.py", title="Bodice Shaping Calculator", url_path="bodice-calculator"),
 }
 
 # So views/home.py can switch pages on button click.
