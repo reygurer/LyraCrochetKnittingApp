@@ -5,12 +5,12 @@
 
 ## Yerel test (SQLite ile, DATABASE_URL vermeye gerek yok)
     python seed_demo.py      # demo pattern'i ekler
-    streamlit run app.py
+    streamlit run streamlit_app.py
 
 ## Canlıya alma (PostgreSQL ile)
     export DATABASE_URL=postgresql://kullanici:sifre@host:5432/veritabani
     python seed_demo.py
-    streamlit run app.py
+    streamlit run streamlit_app.py
 
 ## Yeni pattern eklemek
 `seed_demo.py`'deki gibi bir `Pattern` satırı oluşturup DB'ye ekle — arayüz

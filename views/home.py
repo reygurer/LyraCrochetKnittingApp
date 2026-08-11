@@ -35,13 +35,10 @@ nav_card(col3, "yarn", "Yarn Calculator",
          "Get a rough yarn estimate based on project type.",
          "Open →")
 
-col4, col5, col6 = st.columns(3)
+col4, col5 = st.columns(2)
 nav_card(col4, "scaler", "Pattern Scaler",
          "Recalculate a stitch/row count for a different gauge or size.",
          "Open →")
 nav_card(col5, "rows", "Row Counter",
          "Track multiple projects at once.",
-         "Open →")
-nav_card(col6, "bodice", "Bodice Shaping Calculator",
-         "Plan the bottom panel rows and bust increases from your own measurements.",
          "Open →")
