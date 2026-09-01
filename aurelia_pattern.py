@@ -21,8 +21,8 @@ def build_aurelia_pattern() -> Pattern:
         name="Aurelia Top Crochet Pattern",
         tag="crochet",
         description="A personalized crochet top pattern, sized from your own gauge and measurements.",
-        is_free=True,  # flip to False and set access_key once it's ready to sell
-        access_key=None,
+        is_free=False,  # locked — needs the access key below plus a matching order (see add_order.py)
+        access_key="AURELIA-2026",  # change this to whatever you'll send buyers on Etsy
         swatch_fields=[
             {"id": "swatchWidth10st", "label": "Width for 10 stitches (cm)"},
             {"id": "swatchHeight10row", "label": "Height for 10 rows (cm)"},
@@ -54,19 +54,15 @@ def build_aurelia_pattern() -> Pattern:
              "formula": "(A/10)*bust", "round": {"type": "mround", "multiple": 1}},
             {"id": "G", "label": "G — Total stitches to increase",
              "formula": "F-E", "round": "none"},
-            {"id": "H", "label": "H — Increase rows",
+            {"id": "H", "label": "H — Rows to reach underarm",
              "formula": "(B/10)*underbustToUnderarm", "round": {"type": "mround", "multiple": 1}},
-            {"id": "I", "label": "I — Increase per row (total, both sides)",
-             "formula": "G/H", "round": "even"},
-            {"id": "J", "label": "J — Increase per side, per row",
-             "formula": "I/2", "round": "none"},
         ],
         yarn_estimate=None,
         instructions_template=(
             "Bottom panel: cast on {C} sts and work sideways for {D} rows to "
             "reach your waist/underbust average.\n"
             "Upper panel: cast on / pick up {E} sts.\n"
-            "Increase {I} sts every row ({J} sts on each side) for {H} rows, "
-            "until you reach {F} sts for the bust."
+            "Increase a total of {G} sts, spread evenly, over {H} rows, "
+            "until you reach the underarm and have {F} sts for the bust."
         ),
     )
